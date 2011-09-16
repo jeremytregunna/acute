@@ -30,11 +30,15 @@ module Acute
     end
 
     rule :message do
-      (multi_arg_message | no_arg_message).as(:message)
+      (multi_arg_message | single_arg_message | no_arg_message).as(:message)
     end
     
     rule :no_arg_message do
       identifier.as(:identifier)
+    end
+    
+    rule :single_arg_message do
+      identifier.maybe.as(:identifier) >> single_opener >> (literal | message).as(:args).maybe
     end
     
     rule :multi_arg_message do
@@ -50,7 +54,7 @@ module Acute
     end
     
     rule :identifier do
-      match('[a-zA-Z0-9_\+\-\*\/!@$%^&=\.\?:<>\|~;]').repeat(1)
+      match('[a-zA-Z0-9_\+\-\*\/!@$%^&=\.\?<>\|~;]').repeat(1)
     end
     
     rule :integer do
@@ -70,6 +74,10 @@ module Acute
     
     rule :insignificant_separator do
       separator.as(:insignificant)
+    end
+    
+    rule :single_opener do
+      str(":") >> separator.maybe
     end
     
     rule :opener do
