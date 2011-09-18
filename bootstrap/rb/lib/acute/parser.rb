@@ -38,15 +38,15 @@ module Acute
     end
     
     rule :single_arg_message do
-      identifier.maybe.as(:identifier) >> single_opener >> (literal | message).as(:args).maybe
+      identifier.maybe.as(:identifier) >> single_opener.as(:opener) >> (literal | message).maybe.as(:args)
     end
     
     rule :multi_arg_message do
-      identifier.maybe.as(:identifier) >> (opener >> arglist.maybe >> closer)
+      identifier.maybe.as(:identifier) >> opener.as(:opener) >> arglist.maybe.as(:args) >> closer
     end
     
     rule :arglist do
-      (expression >> (comma >> expression).repeat).as(:args)
+      expression >> (comma >> expression).repeat
     end
 
     rule :literal do
@@ -69,7 +69,7 @@ module Acute
     end
     
     rule :sugar_separator do
-      (terminating_separator >> terminator.absent?).as(:sugarSep)
+      (terminating_separator >> terminator.absent?).as(:sugar_sep)
     end
     
     rule :insignificant_separator do
