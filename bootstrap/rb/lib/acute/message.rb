@@ -5,9 +5,9 @@
 module Acute
   class Message < ::Acute::Object
     include Comparable
-    attr_accessor :name, :arguments, :next, :cached_result, :line_number, :character_number
+    attr_accessor :name, :arguments, :next, :cached_result, :line_number, :character_number, :origin
 
-    def initialize(name, arguments = [], options = { :cached_result => nil, :line_number => -1, :character_number => -1})
+    def initialize(name, arguments = [], options = { :cached_result => nil, :line_number => -1, :character_number => -1, :origin => nil})
       super()
       @name = name
       @arguments = arguments
@@ -15,6 +15,7 @@ module Acute
       @cached_result = options[:cached_result]
       @line_number = options[:line_number]
       @character_number = options[:character_number]
+      @origin = options[:origin]
       register(:parent, $state.find("Object"))
       method_table
     end
