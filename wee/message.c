@@ -69,3 +69,10 @@ obj_t* msg_eval_arg_at(msg_t* msg, obj_t* sender, size_t index)
 
     return msg_perform_on(arg, sender, sender);
 }
+
+char* msg_string(msg_t* msg)
+{
+	char* str = malloc(strlen(msg->name) + 1);
+	memcpy(str, msg->name, strlen(msg->name) + 1);
+	return str;
+}

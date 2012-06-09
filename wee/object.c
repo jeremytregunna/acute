@@ -85,40 +85,38 @@ obj_t* obj_lookup_local(obj_t* obj, char* name)
 
 obj_t* obj_lookup(obj_t* obj, char* name, obj_t** context)
 {
-    // First, lets look up a "lookup" slot, and use that instead of this if we have it.
-    obj_t* lookup = hash_get(obj->slots, "lookup");
     // Maintain a list of objects we've scanned, to avoid lookup loops.
-    list_t* objects_scanned = list_new();
+    static list_t* objects_scanned = NULL;
+    objects_scanned = list_new();
 
     if(list_contains(objects_scanned, obj))
         return NULL;
 
-    if(!lookup)
+    obj_t* value = hash_get(obj->slots, name);
+	fprintf(stderr, "value = %p\n", value);
+    if(value || (value == NULL && list_contains(objects_scanned, obj)))
     {
-        obj_t* value = hash_get(obj->slots, name);
-        if(value)
-            return value;
-        // Now mark the object 'dirty' for our purposes. We've already scanned it.
-        list_append(objects_scanned, obj);
-        
-        obj_t* parent = obj_lookup(obj, "parent", context);
-        value = NULL;
-        if(parent)
-            value = obj_lookup(parent, name, NULL);
-        //list_remove(objects_scanned, obj); // TODO: Implement
-        *context = obj;
+        list_destroy(objects_scanned);
         return value;
     }
-    else
+    // Now mark the object 'dirty' for our purposes. We've already scanned it.
+    list_append(objects_scanned, obj);
+    
+    obj_t* parent = NULL;
+    value = NULL;
+    while((parent = hash_get(obj->slots, "parent")))
     {
-        //TODO: Implement blocks, call lookup -- a block, with the appropriate arguments
-        //      and return its value, whatever that may be.
+        if(parent)
+        {
+            value = obj_lookup(parent, name, NULL);
+            if(value == NULL)
+                continue;
+        }
     }
-
-    // Didn't find anything, oops! We don't raise an error here, since we only care about
-    // returning a value we found or an invalid value. Callers should implement their own
-    // error handling in cases they don't desire.
-    return NULL;
+    //list_remove(objects_scanned, obj); // TODO: Implement
+    *context = obj;
+    list_destroy(objects_scanned);
+    return value;
 }
 
 bool obj_use_trait(obj_t* obj, obj_t* trait, hash_t* resolutions)
@@ -156,7 +154,10 @@ obj_t* obj_perform(obj_t* target, obj_t* locals, msg_t* msg)
     if(obj)
     {
         block_t* activate = (block_t*)obj_lookup(obj, "activate", &context);
-        return block_activate(activate, target, locals, msg, context);
+        if(activate)
+            return block_activate(activate, target, locals, msg, context);
+        else
+            return obj;
     }
     obj = obj_lookup(target, "forward", &context);
     if(obj)
