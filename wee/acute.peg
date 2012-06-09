@@ -1,6 +1,6 @@
 %{
 #define YYSTYPE void*
-#define YY_DEBUG
+//#define YY_DEBUG
 
 #include "message.h"
 #include "num.h"

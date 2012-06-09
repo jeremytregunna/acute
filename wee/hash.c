@@ -87,8 +87,9 @@ void hash_destroy(hash_t* hash)
 bool hash_insert(hash_t* hash, char* key, void* value)
 {
     hash_record_t* record = NULL;
-    uint32_t hval = fnv_hash_1a(key, 0x811c9dc5); // Magic numbers, must love.
+    uint32_t hval = fnv_hash_1a(key, 0x811c9dc5) % hash->capacity; // Magic numbers, must love.
 
+	fprintf(stderr, "hash->records = %p\n", hash->records);
     record = hash->records[hval];
     while(record)
     {
@@ -129,7 +130,7 @@ bool hash_insert(hash_t* hash, char* key, void* value)
 void* hash_get(hash_t* hash, char* key)
 {
     hash_record_t* record = NULL;
-    uint32_t hval = fnv_hash_1a(key, 0x811c9dc5); // Magic numbers, must love.
+    uint32_t hval = fnv_hash_1a(key, 0x811c9dc5) % hash->capacity; // Magic numbers, must love.
 
     record = hash->records[hval];
     while(record)
@@ -146,7 +147,7 @@ bool hash_delete(hash_t* hash, char* key)
 {
     hash_record_t* record = NULL;
     hash_record_t* previous = NULL;
-    uint32_t hval = fnv_hash_1a(key, 0x811c9dc5); // Magic numbers, must love.
+    uint32_t hval = fnv_hash_1a(key, 0x811c9dc5) % hash->capacity; // Magic numbers, must love.
 
     record = hash->records[hval];
     while(record)

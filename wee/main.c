@@ -22,7 +22,9 @@
  */
 
 #include <stdio.h>
+#include "str.h"
 #include "message.h"
+#include "object_space.h"
 
 extern msg_t* root;
 
@@ -30,7 +32,14 @@ extern void yyparse();
 
 int main()
 {
+	object_space_t* os = object_space_get();
+  printf("=> ");
     yyparse();
     msg_t* r = root;
+	str_t* str = (str_t*)msg_perform_on(root, os->lobby, os->lobby);
+	
+	printf("%s\n", str->data);
+	printf("%p\n", root);
+	printf("%s\n", msg_string(root));
     return 0;
 }

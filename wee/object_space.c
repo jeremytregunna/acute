@@ -27,6 +27,7 @@
 #include "hash.h"
 #include "object.h"
 #include "object_space.h"
+#include "str.h"
 
 static object_space_t* global_object_space = NULL;
 static pthread_once_t once_control = PTHREAD_ONCE_INIT;
@@ -34,11 +35,14 @@ static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 static void object_space_init(void)
 {
     global_object_space = malloc(sizeof(*global_object_space));
+	fprintf(stderr, "global_object_space = %p\n", global_object_space);
     // Chicken-egg problem commences below.
     obj_t* lobby = obj_new();
+	global_object_space->lobby = lobby;
     obj_t* object = obj_new();
     obj_register_slot(lobby, "parent", object);
     obj_register_slot(object, "parent", lobby);
+	obj_register_slot(lobby, "test", str_new("Test string", 12));
     object_space_register_proto(global_object_space, "Object", object);
 }
 
@@ -61,5 +65,6 @@ void object_space_destroy(object_space_t* space)
 // Register a new prototype
 void object_space_register_proto(object_space_t* space, char* name, obj_t* value)
 {
+	fprintf(stderr, "space->lobby = %p\n", space->lobby);
     obj_register_slot(space->lobby, name, value);
 }
