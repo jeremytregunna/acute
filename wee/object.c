@@ -39,12 +39,20 @@ obj_t* obj_new(void)
     return obj_new_with_size(sizeof(obj_t));
 }
 
+obj_t* obj_new_parent(obj_t* parent)
+{
+    obj_t* obj = obj_new_with_size(sizeof(*obj));
+    obj_register_slot(obj, "parent", parent);
+    obj_register_slot(obj, OBJ_STR(shape), obj_shape(obj));
+    return obj;
+}
+
 obj_t* obj_new_with_size(size_t size)
 {
     obj_t* obj = malloc(size);
     obj->slots = hash_new(DEFAULT_SLOTTABLE_SIZE);
     obj->cached_result = NULL;
-    obj->shape = obj_shape(obj);
+    obj_register_slot_unsafe(obj, OBJ_STR(shape), obj_shape(obj));
     return obj;
 }
 
@@ -63,59 +71,32 @@ bool obj_register_slot_unsafe(obj_t* obj, char* name, void* value)
 bool obj_register_slot(obj_t* obj, char* name, void* value)
 {
     bool success = obj_register_slot_unsafe(obj, name, value);
-    obj->shape = obj_shape(obj);
+    obj_register_slot_unsafe(obj, OBJ_STR(shape), obj_shape(obj));
     return success;
 }
 
 obj_t* obj_lookup_local(obj_t* obj, char* name)
 {
-    // First, lets look up a "lookup" slot, and use that instead of this if we have it.
-    obj_t* lookup = hash_get(obj->slots, "lookup");
-
-    if(!lookup)
-        return hash_get(obj->slots, name);
-    else
-    {
-        //TODO: Implement blocks, call lookup -- a block, with the appropriate arguments
-        //      and return its value, whatever that may be.
-    }
-
-    return NULL;
+    return hash_get(obj->slots, name);
 }
 
-obj_t* obj_lookup(obj_t* obj, char* name, obj_t** context)
+obj_t* obj_lookup(obj_t* obj, msg_t* msg, obj_t** context)
 {
-    // Maintain a list of objects we've scanned, to avoid lookup loops.
-    static list_t* objects_scanned = NULL;
-    objects_scanned = list_new();
-
-    if(list_contains(objects_scanned, obj))
-        return NULL;
-
-    obj_t* value = hash_get(obj->slots, name);
-	fprintf(stderr, "value = %p\n", value);
-    if(value || (value == NULL && list_contains(objects_scanned, obj)))
+    obj_t* value = obj_lookup_local(obj, msg->name);
+	if(value)
     {
-        list_destroy(objects_scanned);
+        if(context)
+            *context = obj;
         return value;
     }
-    // Now mark the object 'dirty' for our purposes. We've already scanned it.
-    list_append(objects_scanned, obj);
-    
-    obj_t* parent = NULL;
-    value = NULL;
-    while((parent = hash_get(obj->slots, "parent")))
-    {
-        if(parent)
-        {
-            value = obj_lookup(parent, name, NULL);
-            if(value == NULL)
-                continue;
-        }
-    }
-    //list_remove(objects_scanned, obj); // TODO: Implement
-    *context = obj;
-    list_destroy(objects_scanned);
+
+    block_t* forward = obj_lookup_local(obj, OBJ_STR(forward));
+    if(forward)
+        return block_call(forward, obj, msg);
+
+    if(context)
+        *context = obj;
+
     return value;
 }
 
@@ -139,7 +120,7 @@ bool obj_use_trait(obj_t* obj, obj_t* trait, hash_t* resolutions)
             obj_register_slot_unsafe(obj, key, value);
     });
 
-    obj->shape = obj_shape(obj);
+    obj_register_slot(obj, OBJ_STR(shape), obj_shape(obj));
 
     return false;
 }
@@ -147,19 +128,21 @@ bool obj_use_trait(obj_t* obj, obj_t* trait, hash_t* resolutions)
 obj_t* obj_perform(obj_t* target, obj_t* locals, msg_t* msg)
 {
     obj_t* context = NULL;
-    obj_t* obj = obj_lookup(target, msg->name, &context);
-    if(obj && obj->cached_result)
-        return obj->cached_result;
+    obj_t* obj = obj_lookup(target, msg, &context);
 
     if(obj)
     {
-        block_t* activate = (block_t*)obj_lookup(obj, "activate", &context);
+        if(obj->cached_result)
+            return obj->cached_result;
+
+        block_t* activate = (block_t*)obj_lookup(obj, acute_activate_msg, &context);
         if(activate)
             return block_activate(activate, target, locals, msg, context);
         else
             return obj;
     }
-    obj = obj_lookup(target, "forward", &context);
+
+    obj = obj_lookup(target, acute_forward_msg, &context);
     if(obj)
         return block_call((block_t*)obj, locals, msg);
     return NULL;
@@ -180,4 +163,15 @@ uint32_t obj_shape(obj_t* obj)
     });
 
     return hval;
+}
+
+void obj_install_slots(obj_t* obj)
+{
+
+}
+
+ACUTE_PRIM(obj, lookup)
+{
+    msg_t* name_msg = msg_arg_at(msg, 0);
+    return obj_lookup(self, name_msg, NULL);
 }

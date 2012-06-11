@@ -35,6 +35,10 @@ typedef struct msg_s
 	list_t*       arguments;
 } msg_t;
 
+// Primitive messages required by the runtime
+extern msg_t* acute_forward_msg;
+extern msg_t* acute_activate_msg;
+
 // Create a new message
 extern msg_t* msg_new(const char*, list_t*, msg_t*);
 
@@ -43,6 +47,9 @@ extern void msg_destroy(msg_t*);
 
 // Perform a message
 extern obj_t* msg_perform_on(msg_t*, obj_t*, obj_t*);
+
+// Get the message at a specific index
+extern msg_t* msg_arg_at(msg_t*, size_t);
 
 // Eval arg at a specific index
 extern obj_t* msg_eval_arg_at(msg_t*, obj_t*, size_t);

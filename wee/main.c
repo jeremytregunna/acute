@@ -33,7 +33,7 @@ extern void yyparse();
 int main()
 {
 	object_space_t* os = object_space_get();
-  printf("=> ");
+    printf("=> ");
     yyparse();
     msg_t* r = root;
 	str_t* str = (str_t*)msg_perform_on(root, os->lobby, os->lobby);

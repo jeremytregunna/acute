@@ -28,6 +28,7 @@
 #include "object.h"
 #include "object_space.h"
 #include "str.h"
+#include "message.h"
 
 static object_space_t* global_object_space = NULL;
 static pthread_once_t once_control = PTHREAD_ONCE_INIT;
@@ -35,7 +36,11 @@ static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 static void object_space_init(void)
 {
     global_object_space = malloc(sizeof(*global_object_space));
-	fprintf(stderr, "global_object_space = %p\n", global_object_space);
+
+    // Message names required by the runtime
+    acute_forward_msg = msg_new("forward", list_new(), NULL);
+    acute_activate_msg = msg_new("activate", list_new(), NULL);
+
     // Chicken-egg problem commences below.
     obj_t* lobby = obj_new();
 	global_object_space->lobby = lobby;
@@ -65,6 +70,5 @@ void object_space_destroy(object_space_t* space)
 // Register a new prototype
 void object_space_register_proto(object_space_t* space, char* name, obj_t* value)
 {
-	fprintf(stderr, "space->lobby = %p\n", space->lobby);
     obj_register_slot(space->lobby, name, value);
 }

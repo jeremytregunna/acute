@@ -25,6 +25,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "message.h"
+#include "list.h"
+
+msg_t* acute_forward_msg = NULL;
+msg_t* acute_activate_msg = NULL;
 
 msg_t* msg_new(const char* name, list_t* arguments, msg_t* next)
 {
@@ -51,11 +55,17 @@ obj_t* msg_perform_on(msg_t* msg, obj_t* target, obj_t* locals)
 
     do
     {
+        printf("Performing: %s\n", msg_string(m));
         result = obj_perform(target, locals, m);
         target = result;
     } while((m = m->next));
 
     return result;
+}
+
+msg_t* msg_arg_at(msg_t* msg, size_t index)
+{
+    return list_at(msg->arguments, index);
 }
 
 obj_t* msg_eval_arg_at(msg_t* msg, obj_t* sender, size_t index)

@@ -26,13 +26,17 @@
 
 #include <stdint.h>
 #include "hash.h"
+#include "list.h"
 
 struct msg_s;
 
 #define OBJECT_HEADER \
 	hash_t*       slots; \
-	struct obj_s* cached_result; \
-	uint32_t      shape;
+	struct obj_s* cached_result;
+
+#define OBJ_STR(s) #s
+
+#define ACUTE_PRIM(o, s) o ## _t * o ## _prim_ ## s(o ## _t * self, obj_t* locals, struct msg_s* msg)
 
 typedef struct obj_s
 {
@@ -41,6 +45,9 @@ typedef struct obj_s
 
 // Create a new empty object
 extern obj_t* obj_new(void);
+
+// Creates a new empty object with a parent slot set to the first arg.
+extern obj_t* obj_new_parent(obj_t*);
 
 // Create a new empty object and allocate a given size. Use this when allocating
 // objects from custom C-level objects, like msg_t.
@@ -60,7 +67,7 @@ extern obj_t* obj_lookup_local(obj_t*, char*);
 
 // Look up a slot while following the parent inheritance graph. Returns the object
 // if found, NULL and outputs the context it was found in, in the last parameter.
-extern obj_t* obj_lookup(obj_t*, char*, obj_t**);
+extern obj_t* obj_lookup(obj_t*, struct msg_s*, obj_t**);
 
 // Use another object as a trait. Returns true if successful.
 // The hash_t is used for name resolutions. If a name conflicts, you must
@@ -74,5 +81,8 @@ extern obj_t* obj_perform(obj_t*, obj_t*, struct msg_s*);
 // Returns the shape of an object. An object shape is a hash of all the keys
 // of the objects slot table.
 extern uint32_t obj_shape(obj_t*);
+
+// Primitive lookup function
+extern ACUTE_PRIM(obj, lookup);
 
 #endif /* !__WEE__OBJECT_H__ */
